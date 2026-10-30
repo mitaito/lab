@@ -87,18 +87,27 @@ jobs:
         with:
           persist-credentials: false
 
+      # This repository is public, so CI holds only the token of the deployer
+      # ServiceAccount, which can roll out the app in the mi-lab namespace and
+      # nothing else. Never put a cluster-admin kubeconfig in these secrets.
       - name: Configure kubectl
         env:
-          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+          K8S_SERVER: ${{ secrets.K8S_SERVER }}
+          K8S_CA_DATA: ${{ secrets.K8S_CA_DATA }}
+          K8S_TOKEN: ${{ secrets.K8S_TOKEN }}
         run: |
           set -euo pipefail
-          if [ -z "$KUBE_CONFIG" ]; then
-            echo "::error::Add the KUBE_CONFIG secret (a base64-encoded kubeconfig). See docs/deployment.md."
-            exit 1
-          fi
-          mkdir -p ~/.kube
-          printf '%s' "$KUBE_CONFIG" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
+          K8S_TOKEN="$(printf '%s' "$K8S_TOKEN" | tr -d '[:space:]')"
+          case "$K8S_TOKEN" in
+            eyJ*) ;;
+            *) echo "::error::K8S_TOKEN is missing or is not a decoded service account token (it starts with eyJ). See docs/deployment.md."; exit 1 ;;
+          esac
+          echo "$K8S_CA_DATA" | base64 -d > "$RUNNER_TEMP/ca.crt"
+          kubectl config set-cluster mi-lab --server="$K8S_SERVER" \
+            --certificate-authority="$RUNNER_TEMP/ca.crt" --embed-certs=true
+          kubectl config set-credentials deployer --token="$K8S_TOKEN"
+          kubectl config set-context mi-lab --cluster=mi-lab --user=deployer --namespace="$NAMESPACE"
+          kubectl config use-context mi-lab
           kubectl version
 
       # The manifests name :latest and do not change when only the image does,

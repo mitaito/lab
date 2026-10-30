@@ -37,7 +37,7 @@ It lints, type-checks and tests the change and builds the image (which also
 validates `content/`), but it:
 
 - triggers on `pull_request`, never `pull_request_target`, so code from a fork
-  gets a read-only token and **no secrets** (`KUBE_CONFIG` is not available);
+  gets a read-only token and **no secrets** (`K8S_TOKEN` is not available);
 - never logs in to GHCR, pushes an image or touches the cluster;
 - checks out without persisting credentials and only reads the build cache.
 
@@ -69,27 +69,39 @@ The names in `k8s/` were checked against the live cluster:
 
 Still on you: a **DNS record** for `mitaito.com` that reaches the cluster
 (it resolves through Cloudflare today, like `caro.mitaito.com`). The
-`mi-lab` namespace is created by the first deploy.
+`mi-lab` namespace and the `deployer` ServiceAccount that CI uses come from the
+[devops repository](https://github.com/mitaito/devops/blob/main/k8s/README.md)
+(`k8s/mi-lab`), not from this one. Apply that first.
 
-### 2. The kubeconfig secret
+### 2. The deploy token
 
-One **repository secret**, `KUBE_CONFIG`, holding the base64-encoded kubeconfig.
-`k8s/admin.conf` is that kubeconfig. It is listed in `.gitignore` and must never
-be committed: it carries a cluster-admin key, and this repository is public.
+Three **repository secrets** carry the token of the `deployer` ServiceAccount, so
+the workflow never holds a cluster-admin credential (this repository is public).
+Run this where the cluster-admin kubeconfig is, after the devops repository has
+created the ServiceAccount:
 
 ```bash
-base64 -i k8s/admin.conf | gh secret set KUBE_CONFIG --repo mitaito/mi-lab
+K=/path/to/admin.conf
+gh secret set K8S_SERVER  --repo mitaito/mi-lab --body "$(kubectl --kubeconfig $K config view --minify -o jsonpath='{.clusters[0].cluster.server}')"
+gh secret set K8S_CA_DATA --repo mitaito/mi-lab --body "$(kubectl --kubeconfig $K config view --minify --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')"
+gh secret set K8S_TOKEN   --repo mitaito/mi-lab --body "$(kubectl --kubeconfig $K -n mi-lab get secret deployer-token -o jsonpath='{.data.token}' | base64 -d)"
 ```
+
+If a `KUBE_CONFIG` secret from the earlier setup still exists, delete it:
+`gh secret delete KUBE_CONFIG --repo mitaito/mi-lab`.
 
 Things to know about this credential:
 
-- It is a kubeadm admin certificate, **valid until 2027-10-29**. Deploys fail
-  after that until you renew it and set the secret again.
-- It is full cluster-admin. A ServiceAccount limited to the `mi-lab`
-  namespace would be safer, and its token would not expire on a calendar.
-- GitHub-hosted runners can reach the API server at the address in the
-  kubeconfig's `server:` field, and its certificate includes that address, so
-  TLS verifies.
+- The ServiceAccount can apply and roll out this app in the `mi-lab` namespace
+  and read its pods, events and certificate. It cannot read Secrets, delete
+  anything or touch another namespace, so a leaked token does limited damage.
+- The token does not expire. To rotate it, delete the `deployer-token` Secret in
+  the `mi-lab` namespace, apply `k8s/mi-lab` from the devops repository again,
+  and rerun the three commands.
+- GitHub-hosted runners can reach the API server at the address in `K8S_SERVER`,
+  and its certificate includes that address, so TLS verifies.
+- A new kind of resource in `k8s/` (a ConfigMap, a CronJob) needs a matching rule
+  in the devops repository first, or the deploy is refused with `Forbidden`.
 
 Nothing else needs configuring.
 
@@ -125,8 +137,9 @@ fix DNS and re-run the workflow.
 
 ## The manifests
 
-`k8s/` is a plain Kustomize base: `namespace.yaml`, `deployment.yaml`,
-`service.yaml`, `hpa.yaml`, `ingress.yaml`. The HorizontalPodAutoscaler runs
+`k8s/` is a plain Kustomize base: `deployment.yaml`, `service.yaml`,
+`hpa.yaml`, `ingress.yaml`. The namespace is not in it: the deploy token cannot
+manage namespaces, so the devops repository creates it. The HorizontalPodAutoscaler runs
 between 1 and 5 pods and adds one when average CPU passes 70% of the pod's
 request. It needs metrics-server, which the cluster has. The Deployment leaves
 `replicas` unset on purpose: setting it would reset the count on every deploy.
