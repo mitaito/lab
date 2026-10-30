@@ -1,7 +1,7 @@
 import type { Product, ProductPreview as PreviewKind } from "@/lib/content";
 import Link from "next/link";
 import { changelogPath } from "@/lib/content";
-import { Icon } from "./icon";
+import { Icon } from "@/components/ui/icon";
 import { IsoCard } from "./iso-card";
 import { ProjectPreview } from "./project-preview";
 

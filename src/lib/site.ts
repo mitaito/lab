@@ -11,8 +11,10 @@ export const SITE_URL = (process.env.SITE_URL || "http://localhost:3000").replac
 export const SITE_NAME = "Mitaito Lab";
 export const SITE_TITLE =
   "Mitaito Lab — Interactive Game Theory & Simulation Research";
-export const SITE_DESCRIPTION =
-  "Independent research lab building interactive tools for game theory, simulation, computational media and emergent systems. Browse every product and release.";
+/** What the lab is, in one sentence. The 3D view's lab card shows it too. */
+export const LAB_SUMMARY =
+  "Independent research lab building interactive tools for game theory, simulation, computational media and emergent systems.";
+export const SITE_DESCRIPTION = `${LAB_SUMMARY} Browse every product and release.`;
 export const GITHUB_URL = "https://github.com/mitaito/mi-lab";
 
 export function absoluteUrl(path = "/"): string {

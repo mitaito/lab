@@ -1,7 +1,7 @@
 import { PILLARS } from "@/data/pillars";
-import { Icon } from "./icon";
+import { Icon } from "@/components/ui/icon";
 import { IsoCard } from "./iso-card";
-import { SectionHeading } from "./section-heading";
+import { SectionHeading } from "@/components/ui/section-heading";
 
 export function Pillars() {
   return (

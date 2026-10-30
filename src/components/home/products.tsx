@@ -1,6 +1,6 @@
 import { getProducts } from "@/lib/content";
 import { ProjectCard } from "./project-card";
-import { SectionHeading } from "./section-heading";
+import { SectionHeading } from "@/components/ui/section-heading";
 
 export function Products() {
   const products = getProducts();

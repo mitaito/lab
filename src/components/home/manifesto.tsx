@@ -1,5 +1,5 @@
-import { Icon } from "./icon";
-import { IssueLink } from "./issue-link";
+import { Icon } from "@/components/ui/icon";
+import { IssueLink } from "@/components/ui/issue-link";
 import type { IssueTemplate } from "@/lib/issues";
 
 const ACTIONS: readonly {

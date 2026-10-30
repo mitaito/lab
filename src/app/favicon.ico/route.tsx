@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { LogoMark } from "@/components/logo";
+import { LogoMark } from "@/components/ui/logo";
 
 const SIZES = [16, 32, 48];
 

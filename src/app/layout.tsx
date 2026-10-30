@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, JetBrains_Mono } from "next/font/google";
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
 import { getProducts } from "@/lib/content";
 import { materialSymbolsHref } from "@/lib/icons";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
@@ -92,20 +90,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           href={iconFont}
         />
       </head>
+      {/* The header, footer and <main> come from <SiteShell>, applied by the
+          (site) route group, so /3d can take the whole window. */}
       <body className="flex min-h-screen flex-col bg-surface font-sans text-body-md text-on-surface antialiased">
-        <a
-          href="#main"
-          className="sr-only rounded-xs bg-primary text-body-sm font-medium text-on-primary focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:px-4 focus:py-2"
-        >
-          Skip to content
-        </a>
-        <Header />
-        {/* overflow-x-clip, not -hidden: hidden makes <main> a scroll container, which
-            silently disables the scroll-driven .reveal animations inside it. */}
-        <main id="main" className="flex-1 overflow-x-clip pt-16">
-          {children}
-        </main>
-        <Footer />
+        {children}
       </body>
     </html>
   );
