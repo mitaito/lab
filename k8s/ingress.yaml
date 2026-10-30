@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lab
+  labels:
+    app.kubernetes.io/name: lab
+    app.kubernetes.io/part-of: mitaito-lab
+  annotations:
+    # An existing ClusterIssuer, the same one mi-caro uses. Switch to
+    # letsencrypt-staging while testing to stay clear of rate limits.
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  # The cluster only has Traefik (its default IngressClass).
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - mitaito.com
+      secretName: lab-tls
+  rules:
+    # Keep in step with SITE_URL in .github/workflows/deploy.yml.
+    - host: mitaito.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: lab
+                port:
+                  name: http
