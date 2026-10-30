@@ -62,7 +62,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/mitaito/milab
+          images: ghcr.io/mitaito/mi-lab
           tags: type=raw,value=latest
 
       - name: Build and push image
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      NAMESPACE: mitaito-lab
+      NAMESPACE: mi-lab
     steps:
       - name: Check out manifests
         uses: actions/checkout@v7
@@ -112,8 +112,8 @@ jobs:
         run: |
           set -euo pipefail
           kubectl apply -k k8s
-          kubectl -n "$NAMESPACE" rollout restart deployment/lab
-          kubectl -n "$NAMESPACE" rollout status deployment/lab --timeout=180s
+          kubectl -n "$NAMESPACE" rollout restart deployment/mi-lab
+          kubectl -n "$NAMESPACE" rollout status deployment/mi-lab --timeout=180s
 
       # Proves DNS, the ingress and TLS work, not just the pods. The retries
       # cover cert-manager issuing the certificate on the first deploy.
@@ -127,6 +127,6 @@ jobs:
         if: failure()
         run: |
           kubectl -n "$NAMESPACE" get pods,ingress,certificate -o wide || true
-          kubectl -n "$NAMESPACE" describe deployment/lab || true
-          kubectl -n "$NAMESPACE" logs deployment/lab --tail=100 || true
+          kubectl -n "$NAMESPACE" describe deployment/mi-lab || true
+          kubectl -n "$NAMESPACE" logs deployment/mi-lab --tail=100 || true
           kubectl -n "$NAMESPACE" get events --sort-by=.lastTimestamp | tail -30 || true

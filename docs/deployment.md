@@ -17,7 +17,7 @@ Every push to `main` runs three jobs:
 
 1. **Verify**: ESLint, type-check and unit tests.
 2. **Build and push image**: builds the Docker image with `SITE_URL` baked in and
-   pushes it to `ghcr.io/mitaito/milab` with the single tag `latest`.
+   pushes it to `ghcr.io/mitaito/mi-lab` with the single tag `latest`.
 3. **Deploy to Kubernetes**: applies `k8s/`, restarts the Deployment so every pod
    pulls the new `latest` (`imagePullPolicy: Always`), waits for the rollout,
    then requests the public URL as a smoke test.
@@ -69,7 +69,7 @@ The names in `k8s/` were checked against the live cluster:
 
 Still on you: a **DNS record** for `mitaito.com` that reaches the cluster
 (it resolves through Cloudflare today, like `caro.mitaito.com`). The
-`mitaito-lab` namespace is created by the first deploy.
+`mi-lab` namespace is created by the first deploy.
 
 ### 2. The kubeconfig secret
 
@@ -78,14 +78,14 @@ One **repository secret**, `KUBE_CONFIG`, holding the base64-encoded kubeconfig.
 be committed: it carries a cluster-admin key, and this repository is public.
 
 ```bash
-base64 -i k8s/admin.conf | gh secret set KUBE_CONFIG --repo mitaito/lab
+base64 -i k8s/admin.conf | gh secret set KUBE_CONFIG --repo mitaito/mi-lab
 ```
 
 Things to know about this credential:
 
 - It is a kubeadm admin certificate, **valid until 2027-10-29**. Deploys fail
   after that until you renew it and set the secret again.
-- It is full cluster-admin. A ServiceAccount limited to the `mitaito-lab`
+- It is full cluster-admin. A ServiceAccount limited to the `mi-lab`
   namespace would be safer, and its token would not expire on a calendar.
 - GitHub-hosted runners can reach the API server at the address in the
   kubeconfig's `server:` field, and its certificate includes that address, so
@@ -93,21 +93,16 @@ Things to know about this credential:
 
 Nothing else needs configuring.
 
-### 3. The image pull secret
+### 3. Image visibility
 
-The `milab` package on GHCR is private like your other images, and Secrets are
-per-namespace, so copy `ghcr-creds` from `mi-caro` into the new namespace once:
+The cluster pulls `ghcr.io/mitaito/mi-lab:latest` anonymously, so the `mi-lab`
+package must be public. A new package starts private: open the mitaito
+organization, Packages, `mi-lab`, Package settings, Change visibility, Public.
+Until then the rollout sits in `ImagePullBackOff`.
 
-```bash
-kubectl apply -f k8s/namespace.yaml
-kubectl -n mi-caro get secret ghcr-creds -o jsonpath='{.data.\.dockerconfigjson}' \
-  | base64 -d \
-  | kubectl -n mitaito-lab create secret generic ghcr-creds \
-      --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
-```
-
-Until it exists the first rollout sits in `ImagePullBackOff`. The token behind it
-needs read access to the `milab` package.
+To keep the package private instead, add an `imagePullSecrets` entry to
+`k8s/deployment.yaml` and create that secret in the `mi-lab` namespace (the
+`mi-caro` namespace does this with `ghcr-creds`).
 
 ## Day to day
 
@@ -121,7 +116,7 @@ needs read access to the `milab` package.
   an older revision would pull the newest image again. There is no per-commit
   tag to step back to, because `latest` is the only tag.
 - **Look around:**
-  `kubectl -n mitaito-lab get pods,ingress,certificate`.
+  `kubectl -n mi-lab get pods,ingress,certificate`.
 
 The first deploy can take a couple of minutes while cert-manager issues the
 certificate. The smoke test retries for about two minutes. If it still fails

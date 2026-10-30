@@ -1,10 +1,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: lab
+  name: mi-lab
   labels:
-    app.kubernetes.io/name: lab
-    app.kubernetes.io/part-of: mitaito-lab
+    app.kubernetes.io/name: mi-lab
+    app.kubernetes.io/part-of: mi-lab
   annotations:
     # An existing ClusterIssuer, the same one mi-caro uses. Switch to
     # letsencrypt-staging while testing to stay clear of rate limits.
@@ -15,7 +15,7 @@ spec:
   tls:
     - hosts:
         - mitaito.com
-      secretName: lab-tls
+      secretName: mi-lab-tls
   rules:
     # Keep in step with SITE_URL in .github/workflows/deploy.yml.
     - host: mitaito.com
@@ -25,6 +25,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: lab
+                name: mi-lab
                 port:
                   name: http
