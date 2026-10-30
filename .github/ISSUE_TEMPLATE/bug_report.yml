@@ -1,0 +1,61 @@
+name: Report a bug
+description: Something is broken, wrong or confusing.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping us improve. Issues here are **public**, so please do not include passwords, keys or confidential details.
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      description: Which product is affected?
+      options:
+        - Mi caro (Gomoku)
+        - Resonance Canvas
+        - Nexus Agentic Sandbox
+        - Axiom Force Topology
+        - Lenia Continuous Substrates
+        - Mnemonic CRDT Matrix
+        - Website or changelog
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown on the product card and in the changelog.
+      placeholder: v2.4.0
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we see it ourselves?
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 130 on macOS
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the existing issues and could not find this one.
+          required: true

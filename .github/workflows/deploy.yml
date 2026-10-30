@@ -1,0 +1,129 @@
+name: Deploy
+
+# Every push to main: verify, publish the image to GHCR, roll it out to k8s.
+# Pull requests are handled by pr-check.yml and never reach this workflow.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Never interrupt a deploy that is already running; the next one queues.
+  cancel-in-progress: false
+
+env:
+  # The public origin. Baked into canonical URLs, the sitemap and share images
+  # at build time, and used by the smoke test. The host in k8s/ingress.yaml
+  # must match it.
+  SITE_URL: https://mitaito.com
+
+jobs:
+  verify:
+    name: Verify
+    uses: ./.github/workflows/verify.yml
+
+  # workflow_dispatch can be started from any branch. Only main may publish
+  # or deploy, so the jobs below are skipped everywhere else.
+  image:
+    name: Build and push image
+    needs: verify
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The Deployment runs :latest, so that is the only tag. The step still
+      # supplies the OCI labels, which link the package to this repository.
+      - name: Compute image tags and labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/mitaito/mi-lab
+          tags: type=raw,value=latest
+
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: SITE_URL=${{ env.SITE_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Kubernetes
+    needs: image
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NAMESPACE: mi-lab
+    steps:
+      - name: Check out manifests
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Configure kubectl
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KUBE_CONFIG" ]; then
+            echo "::error::Add the KUBE_CONFIG secret (a base64-encoded kubeconfig). See docs/deployment.md."
+            exit 1
+          fi
+          mkdir -p ~/.kube
+          printf '%s' "$KUBE_CONFIG" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl version
+
+      # The manifests name :latest and do not change when only the image does,
+      # so apply alone would roll nothing out. The restart makes every pod pull
+      # the image CI just pushed; the old pods keep serving until the new ones
+      # are ready.
+      - name: Apply manifests and roll out the latest image
+        run: |
+          set -euo pipefail
+          kubectl apply -k k8s
+          kubectl -n "$NAMESPACE" rollout restart deployment/mi-lab
+          kubectl -n "$NAMESPACE" rollout status deployment/mi-lab --timeout=180s
+
+      # Proves DNS, the ingress and TLS work, not just the pods. The retries
+      # cover cert-manager issuing the certificate on the first deploy.
+      - name: Smoke test the public URL
+        run: |
+          curl --fail --silent --show-error --output /dev/null \
+            --retry 12 --retry-delay 10 --retry-all-errors \
+            "$SITE_URL/"
+
+      - name: Diagnose failed deploy
+        if: failure()
+        run: |
+          kubectl -n "$NAMESPACE" get pods,ingress,certificate -o wide || true
+          kubectl -n "$NAMESPACE" describe deployment/mi-lab || true
+          kubectl -n "$NAMESPACE" logs deployment/mi-lab --tail=100 || true
+          kubectl -n "$NAMESPACE" get events --sort-by=.lastTimestamp | tail -30 || true

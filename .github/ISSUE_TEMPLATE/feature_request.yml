@@ -1,0 +1,41 @@
+name: Suggest a feature
+description: Share an idea for a product or for this site.
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We love ideas. The more clearly you describe the problem, the easier it is to find a good solution. Issues here are **public**, so please keep confidential details out.
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      description: Which product is this for?
+      options:
+        - Mi caro (Gomoku)
+        - Resonance Canvas
+        - Nexus Agentic Sandbox
+        - Axiom Force Topology
+        - Lenia Continuous Substrates
+        - Mnemonic CRDT Matrix
+        - Website or changelog
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Tell us what you are trying to do and what gets in the way.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to see?
+      description: Describe the feature or change you have in mind.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered

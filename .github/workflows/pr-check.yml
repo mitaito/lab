@@ -1,0 +1,45 @@
+name: PR check
+
+# Anyone can open a pull request, so this runs untrusted code. It uses
+# `pull_request` (never `pull_request_target`): code from a fork gets a
+# read-only token and no secrets. It never logs in to a registry, pushes an
+# image or touches the cluster. Keep it that way.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # A newer push to the PR replaces the stale run.
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify
+    uses: ./.github/workflows/verify.yml
+
+  # Runs alongside verify for faster feedback. The Docker build also runs
+  # `pnpm build`, which validates /content and prerenders every page.
+  image:
+    name: Build image (not pushed)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Read-only cache: reuse main's layers, never write the shared cache from
+      # a PR. SITE_URL is left at its default; this image is thrown away.
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          cache-from: type=gha

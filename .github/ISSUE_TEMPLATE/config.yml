@@ -1,0 +1,2 @@
+# Send everyone through a form, so reports always say which product and version.
+blank_issues_enabled: false

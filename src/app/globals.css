@@ -1,0 +1,403 @@
+@import "tailwindcss";
+
+/*
+ * Theme tokens (the "Obsidian Kinetic" system). Dark is the default; adding
+ * `.light` to <html> swaps every token, so components never branch on theme.
+ */
+:root {
+  color-scheme: dark;
+  --surface: #12131a;
+  --surface-container-lowest: #0d0e15;
+  --surface-container-low: #1a1b22;
+  --surface-container: #1e1f26;
+  --surface-container-high: #292931;
+  --surface-container-highest: #33343c;
+  --surface-bright: #383941;
+  --on-surface: #e3e1ec;
+  --on-surface-variant: #c4c7c9;
+  --outline: #8e9193;
+  --primary: #ffffff;
+  --on-primary: #2f3132;
+  --secondary: #4ae176;
+  --tertiary: #7bd0ff;
+  --purple: #d8b4fe;
+  --dot-grid: rgb(74 225 118 / 0.15);
+  --shadow-depth:
+    0 12px 28px -6px rgb(0 0 0 / 0.6), inset 0 1px 0 0 rgb(255 255 255 / 0.08);
+  --shadow-panel:
+    0 8px 24px rgb(0 0 0 / 0.4), inset 0 1px 0 0 rgb(255 255 255 / 0.06);
+  --shadow-chip:
+    0 4px 12px rgb(0 0 0 / 0.25), inset 0 1px 0 0 rgb(255 255 255 / 0.1);
+  --shadow-button:
+    0 4px 14px rgb(255 255 255 / 0.25), inset 0 1px 0 0 rgb(255 255 255 / 0.4);
+}
+
+.light {
+  color-scheme: light;
+  --surface: #f8fafc;
+  --surface-container-lowest: #f1f5f9;
+  --surface-container-low: #ffffff;
+  --surface-container: #f1f5f9;
+  --surface-container-high: #e2e8f0;
+  --surface-container-highest: #cbd5e1;
+  --surface-bright: #ffffff;
+  --on-surface: #1e293b;
+  --on-surface-variant: #475569;
+  --outline: #64748b;
+  --primary: #0f172a;
+  --on-primary: #f8fafc;
+  --secondary: #047857;
+  --tertiary: #0369a1;
+  --purple: #7e22ce;
+  --dot-grid: rgb(16 185 129 / 0.22);
+  --shadow-depth:
+    0 12px 32px -8px rgb(15 23 42 / 0.08), 0 4px 12px rgb(15 23 42 / 0.04),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.9);
+  --shadow-panel:
+    0 8px 24px rgb(15 23 42 / 0.06), inset 0 1px 0 0 rgb(255 255 255 / 0.9);
+  --shadow-chip:
+    0 2px 8px rgb(15 23 42 / 0.08), inset 0 1px 0 0 rgb(255 255 255 / 0.9);
+  --shadow-button:
+    0 4px 14px rgb(15 23 42 / 0.25), inset 0 1px 0 0 rgb(255 255 255 / 0.2);
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface-bright: var(--surface-bright);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline: var(--outline);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-secondary: var(--secondary);
+  --color-tertiary: var(--tertiary);
+  --color-purple: var(--purple);
+
+  --shadow-depth: var(--shadow-depth);
+  --shadow-panel: var(--shadow-panel);
+  --shadow-chip: var(--shadow-chip);
+  --shadow-button: var(--shadow-button);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-jetbrains-mono);
+
+  --spacing-gutter: 1.5rem;
+  --spacing-margin: 2rem;
+  --spacing-margin-mobile: 1rem;
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-md: 1rem;
+  --spacing-space-lg: 1.5rem;
+  --spacing-space-xl: 2.5rem;
+
+  --text-display: 48px;
+  --text-display--line-height: 52px;
+  --text-display--letter-spacing: -0.04em;
+  --text-display--font-weight: 600;
+  --text-display-mobile: 32px;
+  --text-display-mobile--line-height: 38px;
+  --text-display-mobile--letter-spacing: -0.03em;
+  --text-display-mobile--font-weight: 600;
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--letter-spacing: -0.03em;
+  --text-headline-lg--font-weight: 600;
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 32px;
+  --text-headline-md--letter-spacing: -0.02em;
+  --text-headline-md--font-weight: 500;
+  --text-headline-sm: 18px;
+  --text-headline-sm--line-height: 26px;
+  --text-headline-sm--letter-spacing: -0.01em;
+  --text-headline-sm--font-weight: 500;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 24px;
+  --text-body-lg--letter-spacing: -0.01em;
+  --text-body-md: 14px;
+  --text-body-md--line-height: 20px;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 18px;
+  --text-label-md: 12px;
+  --text-label-md--line-height: 16px;
+  --text-label-md--letter-spacing: 0.04em;
+  --text-label-md--font-weight: 500;
+  --text-label-sm: 11px;
+  --text-label-sm--line-height: 14px;
+  --text-label-sm--letter-spacing: 0.06em;
+  --text-label-sm--font-weight: 500;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overscroll-behavior: none;
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
+
+/* Material Symbols (ligature icon font loaded from Google Fonts in layout). */
+@layer components {
+  .icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    overflow: hidden;
+    font-family: "Material Symbols Outlined";
+    font-size: 1.5rem;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    direction: ltr;
+    font-feature-settings: "liga";
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+
+  /*
+   * Cards lie flat at rest so text stays crisp and on the grid. <IsoCard>
+   * adds the pointer tilt on hover; this is the fallback lift.
+   */
+  .iso-card {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .iso-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .bg-isometric-dots {
+    background-image: radial-gradient(var(--dot-grid) 1px, transparent 0);
+    background-size: 28px 28px;
+    background-position: -19px -19px;
+  }
+}
+
+@keyframes iso-float-slow {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(1deg);
+  }
+}
+
+@keyframes iso-float-fast {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.02);
+  }
+}
+
+@keyframes iso-plane {
+  0%,
+  100% {
+    transform: translateY(0) rotateX(60deg) rotateZ(-30deg);
+  }
+  50% {
+    transform: translateY(-12px) rotateX(58deg) rotateZ(-28deg);
+  }
+}
+
+@keyframes bob {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes eq {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes node {
+  50% {
+    transform: scale(1.14);
+  }
+}
+
+@keyframes bubble {
+  40% {
+    transform: translate(1px, -3px) scale(1.25);
+  }
+  70% {
+    transform: translate(0, 0.5px) scale(0.95);
+  }
+}
+
+/*
+ * Motion policy. Crawlers read this site as well as people, so motion is
+ * purely visual: it moves things with `transform` only (never opacity, so no
+ * text is ever invisible, and layout never shifts), it is CSS-only, and it
+ * turns off for prefers-reduced-motion. `backwards` fill applies the starting
+ * pose before the animation and then lets go, so hover and tilt transforms
+ * keep working afterwards. Never start an animation from opacity 0.
+ */
+@keyframes rise {
+  from {
+    transform: translateY(var(--rise, 16px));
+  }
+}
+
+/* Above the fold: plays once on load, staggered with --d. */
+.enter {
+  animation: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Below the fold: tied to scroll, only where the browser supports it. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    --rise: 28px;
+    animation: rise linear backwards;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+}
+
+/* Logo bubble hops when the logo is hovered or focused. */
+.logo-bubble {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+a:hover .logo-bubble,
+a:focus-visible .logo-bubble {
+  animation: bubble 0.9s ease-in-out;
+}
+
+/* Theme switch cross-fade (View Transitions API, see <ThemeToggle>). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.35s;
+}
+
+@theme inline {
+  --animate-bob: bob 0.9s ease-in-out infinite;
+  --animate-eq: eq 0.8s ease-in-out infinite;
+  --animate-node: node 1.2s ease-in-out infinite;
+  --animate-iso-float-slow: iso-float-slow 7s ease-in-out infinite;
+  --animate-iso-float-fast: iso-float-fast 4.5s ease-in-out infinite;
+  --animate-iso-plane: iso-plane 10s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .enter,
+  .reveal {
+    animation: none !important;
+  }
+  .iso-card,
+  .iso-card:hover {
+    transform: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Rendered Markdown of a release's notes (see <ReleaseNotes>). */
+@layer components {
+  .release-notes {
+    color: var(--on-surface-variant);
+    font-size: 0.9375rem;
+    line-height: 1.7;
+  }
+  .release-notes > * + * {
+    margin-top: 1rem;
+  }
+  .release-notes h2,
+  .release-notes h3 {
+    margin-top: 2rem;
+    color: var(--primary);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .release-notes h2 {
+    font-size: 1.125rem;
+  }
+  .release-notes h3 {
+    font-size: 1rem;
+  }
+  .release-notes ul,
+  .release-notes ol {
+    padding-left: 1.25rem;
+  }
+  .release-notes ul {
+    list-style: disc;
+  }
+  .release-notes ol {
+    list-style: decimal;
+  }
+  .release-notes li + li {
+    margin-top: 0.25rem;
+  }
+  .release-notes a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .release-notes a:hover {
+    color: var(--secondary);
+  }
+  .release-notes code {
+    border-radius: 0.125rem;
+    background: var(--surface-container-high);
+    padding: 0.1rem 0.35rem;
+    font-family: var(--font-jetbrains-mono), monospace;
+    font-size: 0.8125rem;
+    color: var(--on-surface);
+  }
+  .release-notes pre {
+    overflow-x: auto;
+    border: 1px solid color-mix(in oklab, var(--surface-container-highest) 60%, transparent);
+    border-radius: 0.5rem;
+    background: var(--surface-container-lowest);
+    padding: 0.75rem 1rem;
+  }
+  .release-notes pre code {
+    background: none;
+    padding: 0;
+  }
+  .release-notes blockquote {
+    border-left: 2px solid var(--surface-container-highest);
+    padding-left: 1rem;
+  }
+  .release-notes table {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  .release-notes th,
+  .release-notes td {
+    border: 1px solid color-mix(in oklab, var(--surface-container-highest) 60%, transparent);
+    padding: 0.4rem 0.75rem;
+    text-align: left;
+  }
+}

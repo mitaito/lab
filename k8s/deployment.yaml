@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mi-lab
+  labels:
+    app.kubernetes.io/name: mi-lab
+    app.kubernetes.io/part-of: mi-lab
+spec:
+  # No replicas here: the HorizontalPodAutoscaler (hpa.yaml) owns the count,
+  # from 1 to 5. Setting it would reset the count on every kubectl apply.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mi-lab
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Never drop below the current replica count: a release that fails its
+      # readiness probe leaves the previous one serving.
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mi-lab
+        app.kubernetes.io/part-of: mi-lab
+    spec:
+      securityContext:
+        # The image runs as the "node" user. runAsNonRoot cannot verify a named
+        # user, so the numeric id is pinned here.
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          # CI pushes :latest on every deploy, then restarts this Deployment;
+          # Always makes each new pod pull it.
+          image: ghcr.io/mitaito/mi-lab:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            # The kubelet sets HOSTNAME to the pod name, overriding the image's
+            # ENV, and Next's standalone server binds to whatever it says.
+            # Without this, the server would not listen on 0.0.0.0.
+            - name: HOSTNAME
+              value: 0.0.0.0
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi
+          # Every page is prerendered, so "/" is cheap and exercises the server.
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+          lifecycle:
+            preStop:
+              # Give the ingress time to stop routing here before SIGTERM.
+              exec:
+                command: ["sleep", "5"]
