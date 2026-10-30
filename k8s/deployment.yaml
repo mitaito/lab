@@ -6,9 +6,8 @@ metadata:
     app.kubernetes.io/name: mi-lab
     app.kubernetes.io/part-of: mi-lab
 spec:
-  # Always three pods. The cluster has one node, so this covers a pod crash or
-  # a rollout, not losing the node.
-  replicas: 3
+  # No replicas here: the HorizontalPodAutoscaler (hpa.yaml) owns the count,
+  # from 1 to 5. Setting it would reset the count on every kubectl apply.
   selector:
     matchLabels:
       app.kubernetes.io/name: mi-lab
@@ -59,6 +58,7 @@ spec:
               cpu: 50m
               memory: 128Mi
             limits:
+              cpu: 200m
               memory: 512Mi
           # Every page is prerendered, so "/" is cheap and exercises the server.
           startupProbe:

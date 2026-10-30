@@ -126,9 +126,13 @@ fix DNS and re-run the workflow.
 ## The manifests
 
 `k8s/` is a plain Kustomize base: `namespace.yaml`, `deployment.yaml`,
-`service.yaml`, `ingress.yaml`. The Deployment always runs three pods; on a
-single node that covers a pod crash or a rollout, not losing the node. Resource
-requests are starting values, so tune them to your cluster. To check a change
+`service.yaml`, `hpa.yaml`, `ingress.yaml`. The HorizontalPodAutoscaler runs
+between 1 and 5 pods and adds one when average CPU passes 70% of the pod's
+request. It needs metrics-server, which the cluster has. The Deployment leaves
+`replicas` unset on purpose: setting it would reset the count on every deploy.
+On a single node, extra pods cover load, a pod crash and a rollout, not losing
+the node. Resource requests are starting values, and the autoscaler's CPU
+target is measured against them, so tune them to your cluster. To check a change
 against the cluster without applying it:
 
 ```bash
