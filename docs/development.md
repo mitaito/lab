@@ -180,7 +180,8 @@ duplicated markup.
 - **Crawling:** `/sitemap.xml` is built from the same list of URLs that is
   prerendered, `/robots.txt` points to it, and `/manifest.webmanifest` is
   included. The home page has `WebSite` and `Organization` structured data, and
-  changelog pages have breadcrumbs.
+  changelog pages have breadcrumbs. `/3d` is deliberately `noindex` and left out
+  of the sitemap (see [3D mode](#3d-mode)).
 - **`SITE_URL`:** the canonical origin, for example `https://lab.example.com`.
   It is baked in at build time and defaults to `http://localhost:3000`, so
   **set it for production builds**, otherwise canonical URLs, the sitemap and
@@ -207,6 +208,43 @@ below it ease in as they scroll into view (`.reveal`), and card previews, arrows
 release rows and the logo react to hover and focus, which costs nothing while
 idle. The theme toggle cross-fades with the View Transitions API where
 supported.
+
+## 3D mode
+
+The switch in the home page's hero (desktop windows, 1024px and up) goes to
+`/3d`: every product as a satellite orbiting a central nucleus, drawn with
+Three.js, filling the window with scrolling locked. Drag to rotate the view
+(the pitch is clamped so it never flips, and the camera backs off as it tips
+toward top-down); moving the pointer only tilts it slightly. Hovering a
+satellite slows it, brings its badge forward and shows a card with the
+product's summary, version, status and metric; hovering the central nucleus
+shows a card about the lab (`LAB_SUMMARY` in `src/lib/site.ts`, plus the product
+and release counts). The cards are drawn in HTML, not on the canvas, and are
+hidden from assistive technology because the same text is on the page. Esc, or
+the switch there, returns home. Satellites are built from `content/products` (the `preview` kind
+picks the model, the product order picks the orbit), so a new product shows up
+without touching the scene.
+
+`/3d` sits outside the site shell, in its own route group: `src/app/(site)` has
+the header and footer, `src/app/(immersive)/3d` has neither. These rules keep it
+from costing the rest of the site anything, and are enforced by
+`src/components/constellation.test.ts`:
+
+- **Three.js loads only on `/3d`,** through a client-only dynamic import in
+  `constellation-screen.tsx`. No other page's JavaScript includes it, and the
+  switch is a plain link with `prefetch={false}`.
+- **Nothing depends on the canvas.** Google documents that Googlebot has no
+  WebGL, so `/3d` also renders a screen-reader-only list of the products, and
+  the home page keeps every product as ordinary markup.
+- **`/3d` is `noindex, follow`** and not in the sitemap: it is a canvas with no
+  copy of its own, and the same products are indexed on `/`. Keep it allowed in
+  `robots.txt`, because a crawler has to fetch the page to see the `noindex`.
+- **Desktop windows only.** The switch is `hidden lg:inline-flex`; below 1024px
+  `/3d` shows a notice and loads no 3D code.
+- **Motion and failure.** With `prefers-reduced-motion` it draws one still
+  frame (no spin, parallax or hover motion; dragging still rotates it, because
+  that is direct manipulation); without WebGL 2 it shows text and a link back. Leaving the page
+  disposes the scene (buffers, textures and the WebGL context).
 
 ## Icons
 

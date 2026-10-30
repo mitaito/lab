@@ -1,4 +1,5 @@
 import { getProducts } from "@/lib/content";
+import { ConstellationSwitch } from "./constellation-switch";
 import { Icon } from "./icon";
 
 export function Hero() {
@@ -19,6 +20,8 @@ export function Hero() {
             <Icon name="deployed_code" className="text-xs" />
             KERNEL: V0.94-RELEASE
           </div>
+          {/* Desktop windows only; opens the full-window 3D view at /3d. */}
+          <ConstellationSwitch className="hidden lg:inline-flex" />
         </div>
 
         <div className="enter relative z-10 flex max-w-4xl flex-col gap-space-sm [--d:70ms]">

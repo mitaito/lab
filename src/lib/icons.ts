@@ -14,7 +14,9 @@ export const UI_ICONS = [
   "code",
   "dark_mode",
   "deployed_code",
+  "expand_more",
   "explore",
+  "filter_vintage",
   "folder_code",
   "games",
   "grid_view",
@@ -24,11 +26,14 @@ export const UI_ICONS = [
   "light_mode",
   "lightbulb",
   "psychology",
+  "satellite_alt",
   "search",
   "smart_toy",
   "speed",
+  "timeline",
   "token",
   "update",
+  "view_in_ar",
 ] as const;
 
 /**
