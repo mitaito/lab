@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { ChangelogSection } from "@/components/changelog-section";
-import { Experiments } from "@/components/experiments";
-import { Hero } from "@/components/hero";
-import { JsonLd } from "@/components/json-ld";
-import { Manifesto } from "@/components/manifesto";
-import { PageContainer } from "@/components/page-container";
-import { Pillars } from "@/components/pillars";
-import { Products } from "@/components/products";
+import { ChangelogSection } from "@/components/home/changelog-section";
+import { Experiments } from "@/components/home/experiments";
+import { Hero } from "@/components/home/hero";
+import { JsonLd } from "@/components/ui/json-ld";
+import { Manifesto } from "@/components/home/manifesto";
+import { PageContainer } from "@/components/ui/page-container";
+import { Pillars } from "@/components/home/pillars";
+import { Products } from "@/components/home/products";
 import {
   absoluteUrl,
   GITHUB_URL,

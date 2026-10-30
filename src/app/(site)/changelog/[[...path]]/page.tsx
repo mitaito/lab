@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Icon } from "@/components/icon";
-import { IssueLink } from "@/components/issue-link";
-import { JsonLd } from "@/components/json-ld";
-import { PageContainer } from "@/components/page-container";
-import { Pagination } from "@/components/pagination";
-import { ProductFilter } from "@/components/product-filter";
-import { ReleaseNotes } from "@/components/release-notes";
-import { ReleaseStatusBadge } from "@/components/release-status-badge";
-import { ReleaseList } from "@/components/release-list";
-import { SectionHeading } from "@/components/section-heading";
+import { Icon } from "@/components/ui/icon";
+import { IssueLink } from "@/components/ui/issue-link";
+import { JsonLd } from "@/components/ui/json-ld";
+import { PageContainer } from "@/components/ui/page-container";
+import { Pagination } from "@/components/changelog/pagination";
+import { ProductFilter } from "@/components/changelog/product-filter";
+import { ReleaseNotes } from "@/components/changelog/release-notes";
+import { ReleaseStatusBadge } from "@/components/changelog/release-status-badge";
+import { ReleaseList } from "@/components/changelog/release-list";
+import { SectionHeading } from "@/components/ui/section-heading";
 import {
   changelogPath,
   changelogStaticPaths,

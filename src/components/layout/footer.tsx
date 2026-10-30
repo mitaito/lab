@@ -1,4 +1,4 @@
-import { IssueLink } from "./issue-link";
+import { IssueLink } from "@/components/ui/issue-link";
 
 export function Footer() {
   const link =

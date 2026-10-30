@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Icon } from "./icon";
+import { Icon } from "@/components/ui/icon";
 
 /** Page numbers to show: the ends and the current page's neighbours. */
 function visiblePages(page: number, pageCount: number): (number | "gap")[] {

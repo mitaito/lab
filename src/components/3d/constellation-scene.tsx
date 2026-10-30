@@ -74,7 +74,7 @@ import type { ProductPreview } from "@/lib/content";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { type Theme, useTheme } from "@/lib/use-theme";
 import { ConstellationSwitch } from "./constellation-switch";
-import { Icon } from "./icon";
+import { Icon } from "@/components/ui/icon";
 import { HUD_CHIP } from "./switch-chip";
 import { ThemeSwitchChip } from "./theme-switch-chip";
 

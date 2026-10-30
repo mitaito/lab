@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { getProducts, getReleases } from "@/lib/content";
-import { Icon } from "./icon";
-import { ProductFilter } from "./product-filter";
-import { ReleaseList } from "./release-list";
-import { SectionHeading } from "./section-heading";
+import { Icon } from "@/components/ui/icon";
+import { ProductFilter } from "@/components/changelog/product-filter";
+import { ReleaseList } from "@/components/changelog/release-list";
+import { SectionHeading } from "@/components/ui/section-heading";
 
 /** The landing page shows only the newest releases; /changelog has the rest. */
 const LATEST = 6;

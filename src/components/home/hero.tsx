@@ -1,6 +1,6 @@
 import { getProducts } from "@/lib/content";
-import { ConstellationSwitch } from "./constellation-switch";
-import { Icon } from "./icon";
+import { ConstellationSwitch } from "@/components/3d/constellation-switch";
+import { Icon } from "@/components/ui/icon";
 
 export function Hero() {
   return (

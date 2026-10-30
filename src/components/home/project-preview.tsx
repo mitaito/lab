@@ -1,5 +1,5 @@
 import type { ProductPreview as PreviewKind } from "@/lib/content";
-import { Icon } from "./icon";
+import { Icon } from "@/components/ui/icon";
 
 /** Mini 2.5D illustration shown at the top of each project card. */
 export function ProjectPreview({ kind }: { kind: PreviewKind }) {

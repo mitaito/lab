@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageContainer } from "@/components/page-container";
-import { SiteShell } from "@/components/site-shell";
+import { PageContainer } from "@/components/ui/page-container";
+import { SiteShell } from "@/components/layout/site-shell";
 
 export const metadata: Metadata = {
   title: "Page not found",

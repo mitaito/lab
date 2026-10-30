@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { LogoMark } from "@/components/logo";
+import { LogoMark } from "@/components/ui/logo";
 import { SITE_NAME } from "@/lib/site";
 
 export const alt = `${SITE_NAME}: interactive research in game theory, simulation and emergent systems`;

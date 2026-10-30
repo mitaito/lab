@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ConstellationScreen } from "@/components/constellation-screen";
+import { ConstellationScreen } from "@/components/3d/constellation-screen";
 import { type LabInfo, toSatellites } from "@/lib/constellation";
 import { changelogPath, getProducts, getReleases } from "@/lib/content";
 import { LAB_SUMMARY, SITE_NAME } from "@/lib/site";

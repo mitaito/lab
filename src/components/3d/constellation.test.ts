@@ -13,7 +13,7 @@ import { CONSTELLATION_PATH } from "@/lib/constellation";
  * and the canvas-only page kept out of the index. Google documents that
  * Googlebot has no WebGL, so nothing may depend on the canvas.
  */
-const SRC = path.join(__dirname, "..");
+const SRC = path.join(__dirname, "../..");
 
 function sourceFiles(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -32,25 +32,25 @@ describe("3D mode: cost to the rest of the site", () => {
       .filter((file) => /from\s+["']three["']/.test(fs.readFileSync(file, "utf8")))
       .map((file) => path.relative(SRC, file));
 
-    expect(importers).toEqual(["components/constellation-scene.tsx"]);
+    expect(importers).toEqual(["components/3d/constellation-scene.tsx"]);
   });
 
   it("reaches the scene only through the /3d screen's client-only dynamic import", () => {
-    const screen = read("components/constellation-screen.tsx");
+    const screen = read("components/3d/constellation-screen.tsx");
 
     expect(screen).toMatch(
       /dynamic\(\s*\(\)\s*=>\s*import\(["']\.\/constellation-scene["']\)[\s\S]*?ssr:\s*false/,
     );
     for (const file of sourceFiles(SRC)) {
       expect(fs.readFileSync(file, "utf8")).not.toMatch(
-        /^import .* from ["'](\.\/|@\/components\/)constellation-scene["']/m,
+        /^import .* from ["'](\.\/|@\/components\/3d\/)constellation-scene["']/m,
       );
     }
   });
 
   it("keeps the home page free of 3D code: it only links to /3d", () => {
-    const home = read("app/(site)/page.tsx") + read("components/hero.tsx");
-    const switchFile = read("components/constellation-switch.tsx");
+    const home = read("app/(site)/page.tsx") + read("components/home/hero.tsx");
+    const switchFile = read("components/3d/constellation-switch.tsx");
 
     expect(home).not.toMatch(/constellation-(scene|screen)/);
     expect(home).toContain("constellation-switch");
@@ -59,10 +59,10 @@ describe("3D mode: cost to the rest of the site", () => {
   });
 
   it("limits the switch to desktop windows in both CSS and JavaScript", () => {
-    expect(read("components/hero.tsx")).toContain(
+    expect(read("components/home/hero.tsx")).toContain(
       '<ConstellationSwitch className="hidden lg:inline-flex" />',
     );
-    expect(read("components/constellation-screen.tsx")).toContain(
+    expect(read("components/3d/constellation-screen.tsx")).toContain(
       "useMediaQuery(CONSTELLATION_MIN_WIDTH)",
     );
     expect(read("lib/constellation.ts")).toContain('"(min-width: 64rem)"');
@@ -79,12 +79,13 @@ describe("3D mode: the /3d page", () => {
     expect(fs.existsSync(path.join(SRC, "app/(immersive)/layout.tsx"))).toBe(false);
     expect(read("app/(site)/layout.tsx")).toContain("<SiteShell>");
 
+    // The root layout must not pull in the site chrome (components/layout).
     const root = read("app/layout.tsx");
-    expect(root).not.toMatch(/components\/(header|footer|site-shell)/);
+    expect(root).not.toMatch(/components\/layout\//);
   });
 
   it("fills the window and locks scrolling", () => {
-    const screen = read("components/constellation-screen.tsx");
+    const screen = read("components/3d/constellation-screen.tsx");
 
     expect(screen).toMatch(/fixed inset-0 overflow-hidden/);
     expect(screen).toMatch(/style\.overflow\s*=\s*"hidden"/);
@@ -92,24 +93,24 @@ describe("3D mode: the /3d page", () => {
   });
 
   it("has its own theme switch, in the HUD's style, since it has no header", () => {
-    expect(read("components/constellation-scene.tsx")).toContain("<ThemeSwitchChip");
+    expect(read("components/3d/constellation-scene.tsx")).toContain("<ThemeSwitchChip");
   });
 
   it("draws every HUD control from one chip box, so the switches match the text chips", () => {
-    const scene = read("components/constellation-scene.tsx");
-    const chips = read("components/switch-chip.tsx");
+    const scene = read("components/3d/constellation-scene.tsx");
+    const chips = read("components/3d/switch-chip.tsx");
 
     // The text chips and both switches share HUD_CHIP (same height and weight)...
     expect(scene).toMatch(/className=\{`\$\{HUD_CHIP\} \$\{className\}`\}/);
     expect(chips).toMatch(/HUD_SWITCH_CHIP = `\$\{HUD_CHIP\} /);
-    expect(read("components/theme-switch-chip.tsx")).toContain("HUD_SWITCH_CHIP");
+    expect(read("components/3d/theme-switch-chip.tsx")).toContain("HUD_SWITCH_CHIP");
     expect(scene).toContain('<ConstellationSwitch on variant="hud" />');
     // ...and the CTA is given the chips' 1px border so its height lines up.
     expect(scene).toMatch(/border border-transparent bg-primary px-2\.5 py-1/);
   });
 
   it("recolours in place on a theme change instead of rebuilding the scene", () => {
-    const scene = read("components/constellation-scene.tsx");
+    const scene = read("components/3d/constellation-scene.tsx");
 
     // The effect that builds the scene must not re-run when the theme changes,
     // or the dragged view and every satellite's orbit position would reset.

@@ -44,6 +44,43 @@ the same way, because standalone output leaves it out.
 | `pnpm lint`  | ESLint                                            |
 | `pnpm test`  | Unit tests for the content loader and URL routing |
 
+## Project structure
+
+All application code is in `src/`, and `src/app` is only routing. Everything
+else sits outside `app`, with components grouped by the page that owns them.
+Next.js has no opinion on this (its docs list several layouts and say to pick
+one and stay consistent), so the rule here is to follow this one.
+
+```text
+src/
+  app/                  routes and metadata files only
+    (site)/             pages with the header and footer: / and /changelog/*
+    (immersive)/3d/     the full-window 3D page, with neither
+  components/
+    ui/                 shared, generic pieces: icon, page-container,
+                        section-heading, json-ld, issue-link, logo
+    layout/             the site chrome: site-shell, header, footer, theme-toggle
+    home/               used by /
+    changelog/          used by /changelog/* (the home page reuses a few)
+    3d/                 used by /3d (the home page reuses the switch)
+  lib/                  logic with no UI: content, SEO, URLs, 3D maths, hooks
+  data/                 static data
+```
+
+Where a new component goes:
+
+- Used by one page: in that page's folder.
+- Used by several pages: in `ui/` if it knows nothing about this site's content
+  (and give it a generic name); otherwise in the folder of the page that owns
+  the concept, and the other pages import it from there. The release list is
+  shown on the home page too, but it is a changelog concept, so it lives in
+  `changelog/`.
+- Part of the header, footer or shell: `layout/`.
+
+Files are kebab-case and named after the component they export
+(`release-list.tsx` exports `ReleaseList`). Import from the file, not through
+`index.ts` barrels, and tests sit next to the code they test.
+
 ## Content
 
 Everything the site shows about products and releases lives in `content/`.
@@ -164,7 +201,7 @@ duplicated markup.
 
 ## Brand and SEO
 
-- **Logo:** `src/components/logo.tsx` is the single source for the mark (a
+- **Logo:** `src/components/ui/logo.tsx` is the single source for the mark (a
   green tile with an "M" and a bubble). `src/app/icon.svg` is the same shape
   as a file. The Apple touch icon, `/favicon.ico` (16, 32 and 48 px) and the
   1200x630 share image used by Open Graph and Twitter are generated from that
@@ -221,7 +258,9 @@ product's summary, version, status and metric; hovering the central nucleus
 shows a card about the lab (`LAB_SUMMARY` in `src/lib/site.ts`, plus the product
 and release counts). The cards are drawn in HTML, not on the canvas, and are
 hidden from assistive technology because the same text is on the page. Esc, or
-the switch there, returns home.
+the switch there, returns home. Satellites are built from `content/products`
+(the `preview` kind picks the model, the product order picks the orbit), so a
+new product shows up without touching the scene.
 
 The page has no header, so it has its own theme switch in the HUD, drawn like
 the 3D MODE switch (`theme-switch-chip.tsx`, sharing `switch-chip.tsx`). A theme
@@ -231,14 +270,13 @@ canvas is transparent over the page, so the scene has a palette per theme
 (`SCENE_PALETTES` and `CRAFT_COLORS_LIGHT` in `src/lib/constellation.ts`): the
 dark one is pale and glows, which would all but vanish on a light page. A test
 checks both against the page background read from `globals.css`, so a new colour
-that cannot be seen fails the build. Satellites are built from `content/products` (the `preview` kind
-picks the model, the product order picks the orbit), so a new product shows up
-without touching the scene.
+that cannot be seen fails the build. All of these components are in
+`src/components/3d/`.
 
 `/3d` sits outside the site shell, in its own route group: `src/app/(site)` has
 the header and footer, `src/app/(immersive)/3d` has neither. These rules keep it
 from costing the rest of the site anything, and are enforced by
-`src/components/constellation.test.ts`:
+`src/components/3d/constellation.test.ts`:
 
 - **Three.js loads only on `/3d`,** through a client-only dynamic import in
   `constellation-screen.tsx`. No other page's JavaScript includes it, and the

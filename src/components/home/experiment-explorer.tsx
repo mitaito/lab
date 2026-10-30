@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "./icon";
+import { Icon } from "@/components/ui/icon";
 
 export interface ExperimentTile {
   id: string;

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CONSTELLATION_PATH } from "@/lib/constellation";
-import { Icon } from "./icon";
+import { Icon } from "@/components/ui/icon";
 import { HERO_SWITCH_CHIP, HUD_SWITCH_CHIP, SwitchTrack } from "./switch-chip";
 
 /**
