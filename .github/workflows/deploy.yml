@@ -4,9 +4,7 @@ name: Deploy
 # Pull requests are handled by pr-check.yml and never reach this workflow.
 on:
   push:
-    # TEMPORARY: the feature branch is listed so the deploy can be tested from
-    # the PR. Remove it, and the matching job conditions below, before merging.
-    branches: [main, feature/site-and-k8s-deploy]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -29,12 +27,11 @@ jobs:
     uses: ./.github/workflows/verify.yml
 
   # workflow_dispatch can be started from any branch. Only main may publish
-  # or deploy, so the jobs below are skipped everywhere else (TEMPORARY: and
-  # the test branch).
+  # or deploy, so the jobs below are skipped everywhere else.
   image:
     name: Build and push image
     needs: verify
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/site-and-k8s-deploy'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -79,7 +76,7 @@ jobs:
   deploy:
     name: Deploy to Kubernetes
     needs: image
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/site-and-k8s-deploy'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
