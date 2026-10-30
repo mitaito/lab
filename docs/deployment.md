@@ -126,9 +126,10 @@ fix DNS and re-run the workflow.
 ## The manifests
 
 `k8s/` is a plain Kustomize base: `namespace.yaml`, `deployment.yaml`,
-`service.yaml`, `ingress.yaml`. Replica count and resource requests are
-starting values, so tune them to your cluster. To check a change against the
-cluster without applying it:
+`service.yaml`, `ingress.yaml`. The Deployment always runs three pods; on a
+single node that covers a pod crash or a rollout, not losing the node. Resource
+requests are starting values, so tune them to your cluster. To check a change
+against the cluster without applying it:
 
 ```bash
 kubectl apply -k k8s --dry-run=server

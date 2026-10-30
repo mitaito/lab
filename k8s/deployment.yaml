@@ -6,7 +6,9 @@ metadata:
     app.kubernetes.io/name: mi-lab
     app.kubernetes.io/part-of: mi-lab
 spec:
-  replicas: 2
+  # Always three pods. The cluster has one node, so this covers a pod crash or
+  # a rollout, not losing the node.
+  replicas: 3
   selector:
     matchLabels:
       app.kubernetes.io/name: mi-lab
