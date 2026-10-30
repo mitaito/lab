@@ -1,0 +1,47 @@
+name: Verify
+
+# Shared by "PR check" and "Deploy", so a change is held to exactly the same
+# checks before review and before release. Not triggered on its own.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, types, tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # pnpm's version comes from "packageManager" in package.json.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      # PageProps / LayoutProps are generated, and .next/ is not in git.
+      - name: Generate Next.js route types
+        run: pnpm exec next typegen
+
+      - name: Type-check
+        run: pnpm exec tsc --noEmit
+
+      - name: Run unit tests
+        run: pnpm test
