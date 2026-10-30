@@ -43,7 +43,7 @@ export function Header() {
             <span className="hidden sm:inline">Changelog</span>
           </Link>
           <a
-            href="https://github.com/mitaito/lab"
+            href="https://github.com/mitaito/mi-lab"
             target="_blank"
             rel="noopener noreferrer"
             className={`${action} hidden sm:inline-flex`}

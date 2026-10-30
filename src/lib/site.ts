@@ -13,7 +13,7 @@ export const SITE_TITLE =
   "Mitaito Lab — Interactive Game Theory & Simulation Research";
 export const SITE_DESCRIPTION =
   "Independent research lab building interactive tools for game theory, simulation, computational media and emergent systems. Browse every product and release.";
-export const GITHUB_URL = "https://github.com/mitaito/lab";
+export const GITHUB_URL = "https://github.com/mitaito/mi-lab";
 
 export function absoluteUrl(path = "/"): string {
   return `${SITE_URL}${path}`;

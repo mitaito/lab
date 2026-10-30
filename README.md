@@ -42,11 +42,11 @@ Release history for each product is in [`content/changelog/`](content/changelog)
 
 We welcome partners, bug reports and ideas, all through GitHub issues:
 
-- [Report a bug](https://github.com/mitaito/lab/issues/new?template=bug_report.yml):
+- [Report a bug](https://github.com/mitaito/mi-lab/issues/new?template=bug_report.yml):
   something broken or confusing.
-- [Suggest a feature](https://github.com/mitaito/lab/issues/new?template=feature_request.yml):
+- [Suggest a feature](https://github.com/mitaito/mi-lab/issues/new?template=feature_request.yml):
   an idea, and the problem it would solve.
-- [Partner with us](https://github.com/mitaito/lab/issues/new?template=partnership.yml):
+- [Partner with us](https://github.com/mitaito/mi-lab/issues/new?template=partnership.yml):
   research, integration, co-development or early access.
 
 Issues are public, so please keep confidential details out. For partnerships,
