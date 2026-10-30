@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useRef,
   useState,
@@ -52,6 +53,7 @@ import {
   CAMERA_RISE,
   cameraDistance,
   CRAFT_COLORS,
+  craftColor,
   dragView,
   FOV,
   type HoverTarget,
@@ -64,12 +66,17 @@ import {
   type Point,
   sameTarget,
   type Satellite,
+  SCENE_PALETTES,
+  type ScenePalette,
   type View,
 } from "@/lib/constellation";
 import type { ProductPreview } from "@/lib/content";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { type Theme, useTheme } from "@/lib/use-theme";
 import { ConstellationSwitch } from "./constellation-switch";
 import { Icon } from "./icon";
+import { HUD_CHIP } from "./switch-chip";
+import { ThemeSwitchChip } from "./theme-switch-chip";
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
@@ -78,7 +85,6 @@ const BADGE = { width: 640, height: 200 } as const;
 const BADGE_SCALE = new Vector2(4.4, 1.375);
 /** Crafts are modelled about one unit across; scaled up to read from the camera. */
 const CRAFT_SCALE = 1.8;
-const SHELL_OPACITY = 0.6;
 /**
  * How far moving the pointer across the whole window tilts the view, each
  * way, in radians. Deliberately small: it is a hint of depth, and the view is
@@ -90,7 +96,6 @@ const PARALLAX_PITCH = 0.06;
 const PARALLAX_EASE = 2;
 /** Slow turn of the whole system when nobody is dragging, radians per second. */
 const AUTO_SPIN = 0.04;
-const ORBIT_OPACITY = 0.25;
 
 const noopSubscribe = () => () => {};
 
@@ -128,17 +133,24 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-/** Lighter tint of an accent, for secondary parts of a craft. */
-const tint = (hex: number) => new Color(hex).lerp(new Color(0xffffff), 0.5);
+/**
+ * A second shade of an accent, for the secondary parts of a craft: paler on a
+ * dark page, deeper on a light one, so it stands out from the page either way.
+ */
+const toneOf = (accent: number, palette: ScenePalette): number =>
+  new Color(accent)
+    .lerp(new Color(palette.toneTarget), palette.toneAmount)
+    .getHex();
 
 const basic = (color: number | Color, wireframe = false) =>
   new MeshBasicMaterial({ color, wireframe });
 
 /**
- * A small model per product, keyed by its `preview` kind. The `Record` makes
- * the compiler flag a new kind that has no model.
+ * A small model per product, keyed by its `preview` kind, drawn in its
+ * `accent` and a second `tone` of it. The `Record` makes the compiler flag a
+ * new kind that has no model.
  */
-const CRAFTS: Record<ProductPreview, (accent: number) => Group> = {
+const CRAFTS: Record<ProductPreview, (accent: number, tone: number) => Group> = {
   gomoku(accent) {
     const craft = new Group();
     const board = new Mesh(
@@ -189,19 +201,19 @@ const CRAFTS: Record<ProductPreview, (accent: number) => Group> = {
     }
     return craft;
   },
-  force(accent) {
+  force(accent, tone) {
     const craft = new Group();
     craft.add(
       new Mesh(new DodecahedronGeometry(0.7, 0), basic(accent, true)),
-      new Mesh(new SphereGeometry(0.3, 8, 8), basic(tint(accent))),
+      new Mesh(new SphereGeometry(0.3, 8, 8), basic(tone)),
     );
     return craft;
   },
-  lenia(accent) {
+  lenia(accent, tone) {
     const craft = new Group();
     craft.add(
       new Mesh(new TorusGeometry(0.7, 0.05, 8, 32), basic(accent)),
-      new Mesh(new TorusGeometry(0.45, 0.05, 8, 24), basic(tint(accent))),
+      new Mesh(new TorusGeometry(0.45, 0.05, 8, 24), basic(tone)),
     );
     return craft;
   },
@@ -223,6 +235,7 @@ const CRAFTS: Record<ProductPreview, (accent: number) => Group> = {
 function createBadge(
   satellite: Satellite,
   fonts: { sans: string; mono: string },
+  palette: ScenePalette,
 ): Sprite {
   const canvas = document.createElement("canvas");
   canvas.width = BADGE.width;
@@ -274,14 +287,22 @@ function createBadge(
   texture.generateMipmaps = false;
 
   const sprite = new Sprite(
-    new SpriteMaterial({ map: texture, transparent: true, opacity: 0.92 }),
+    new SpriteMaterial({
+      map: texture,
+      transparent: true,
+      opacity: palette.badgeOpacity,
+    }),
   );
   sprite.scale.set(BADGE_SCALE.x, BADGE_SCALE.y, 1);
   sprite.position.y = 3;
   return sprite;
 }
 
-function createOrbit(satellite: Satellite): Line {
+function createOrbit(
+  satellite: Satellite,
+  theme: Theme,
+  palette: ScenePalette,
+): Line {
   const segments = 120;
   const points: Vector3[] = [];
   for (let i = 0; i <= segments; i++) {
@@ -292,23 +313,28 @@ function createOrbit(satellite: Satellite): Line {
     );
     points.push(new Vector3(x, y, z));
   }
-  return new Line(
+  const line = new Line(
     new BufferGeometry().setFromPoints(points),
     new LineBasicMaterial({
-      color: CRAFT_COLORS[satellite.preview],
+      color: craftColor(satellite.preview, theme),
       transparent: true,
-      opacity: ORBIT_OPACITY,
+      opacity: palette.orbitOpacity,
+      // A guide line must never hide what it passes behind (a badge's text):
+      // it writes no depth, and is drawn before the badges.
+      depthWrite: false,
     }),
   );
+  line.renderOrder = -1;
+  return line;
 }
 
-function createStars(): Points {
+function createStars(palette: ScenePalette): Points {
   const count = 600;
   const random = mulberry32(186);
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
-  const green = new Color(0x10b981);
-  const indigo = new Color(0x818cf8);
+  const green = new Color(palette.starGreen);
+  const indigo = new Color(palette.starIndigo);
 
   for (let i = 0; i < count; i++) {
     const r = 8 + random() * 22;
@@ -326,10 +352,10 @@ function createStars(): Points {
   return new Points(
     geometry,
     new PointsMaterial({
-      size: 0.09,
+      size: palette.starSize,
       vertexColors: true,
       transparent: true,
-      opacity: 0.75,
+      opacity: palette.starOpacity,
     }),
   );
 }
@@ -364,8 +390,10 @@ function disposeTree(root: Object3D) {
 interface Body {
   group: Group;
   craft: Group;
+  beacon: Mesh<SphereGeometry, MeshBasicMaterial>;
   badge: Sprite;
   orbit: Line;
+  kind: ProductPreview;
   radius: number;
   tilt: number;
   speed: number;
@@ -374,18 +402,36 @@ interface Body {
   hover: number;
 }
 
+interface SceneOptions {
+  /** False for reduced motion: one still frame, redrawn on resize and drag. */
+  animated: boolean;
+  /** Picks the palette: the canvas is transparent, drawn over the page. */
+  theme: Theme;
+  onFps: (fps: number) => void;
+  onHover: (target: HoverTarget | null) => void;
+}
+
+interface SceneHandle {
+  /**
+   * Recolours the scene for another theme in place, so the view you dragged
+   * to and where each satellite is on its orbit are kept.
+   */
+  setTheme: (theme: Theme) => void;
+  dispose: () => void;
+}
+
 /**
- * Builds the scene into `mount` and returns a function that tears it all down.
- * Animated, it runs only while on screen; otherwise (reduced motion) it draws
- * a single still frame, and again on resize.
+ * Builds the scene into `mount` and returns a handle to change its theme and
+ * to tear it all down. Animated, it runs only while on screen; otherwise
+ * (reduced motion) it draws a single still frame, and again on resize.
  */
 function createConstellation(
   mount: HTMLElement,
   satellites: readonly Satellite[],
-  animated: boolean,
-  onFps: (fps: number) => void,
-  onHover: (target: HoverTarget | null) => void,
-): () => void {
+  { animated, theme: initialTheme, onFps, onHover }: SceneOptions,
+): SceneHandle {
+  let theme = initialTheme;
+  let palette = SCENE_PALETTES[theme];
   const renderer = new WebGLRenderer({
     antialias: true,
     alpha: true,
@@ -426,26 +472,25 @@ function createConstellation(
 
   // Central nucleus: wireframe geodesic shell around a luminous crystal.
   const shellMaterial = new MeshBasicMaterial({
-    color: 0x059669,
+    color: palette.shell,
     wireframe: true,
     transparent: true,
-    opacity: SHELL_OPACITY,
+    opacity: palette.shellOpacity,
   });
   const shell = new Mesh(
     new IcosahedronGeometry(NUCLEUS_RADIUS, 2),
     shellMaterial,
   );
-  const crystal = new Mesh(
-    new OctahedronGeometry(1.4, 0),
-    new MeshStandardMaterial({
-      color: 0x10b981,
-      emissive: 0x065f46,
-      emissiveIntensity: 0.8,
-      roughness: 0.2,
-      metalness: 0.8,
-    }),
-  );
-  system.add(shell, crystal, createStars());
+  const crystalMaterial = new MeshStandardMaterial({
+    color: palette.crystal,
+    emissive: palette.crystalEmissive,
+    emissiveIntensity: palette.crystalEmissiveIntensity,
+    roughness: 0.2,
+    metalness: 0.8,
+  });
+  const crystal = new Mesh(new OctahedronGeometry(1.4, 0), crystalMaterial);
+  let stars = createStars(palette);
+  system.add(shell, crystal, stars);
 
   const style = getComputedStyle(mount);
   const fonts = {
@@ -456,24 +501,36 @@ function createConstellation(
       style.getPropertyValue("--font-jetbrains-mono").trim() || "monospace",
   };
 
-  const bodies: Body[] = satellites.map((satellite, index) => {
-    const accent = CRAFT_COLORS[satellite.preview];
-    const group = new Group();
-    const craft = CRAFTS[satellite.preview](accent);
+  /** A craft model in the current theme's accent and its second tone. */
+  function makeCraft(kind: ProductPreview): Group {
+    const accent = craftColor(kind, theme);
+    const craft = CRAFTS[kind](accent, toneOf(accent, palette));
     craft.scale.setScalar(CRAFT_SCALE);
-    const beacon = new Mesh(new SphereGeometry(0.16, 12, 12), basic(0xffffff));
+    return craft;
+  }
+
+  const bodies: Body[] = satellites.map((satellite, index) => {
+    const group = new Group();
+    const craft = makeCraft(satellite.preview);
+    const beacon = new Mesh(
+      new SphereGeometry(0.16, 12, 12),
+      basic(palette.beacon),
+    );
     beacon.position.y = 1.5;
-    const badge = createBadge(satellite, fonts);
+    // The badge is a dark plate in both themes, so it keeps the bright accents.
+    const badge = createBadge(satellite, fonts, palette);
     group.add(craft, beacon, badge);
 
-    const orbit = createOrbit(satellite);
+    const orbit = createOrbit(satellite, theme, palette);
     system.add(orbit, group);
 
     return {
       group,
       craft,
+      beacon,
       badge,
       orbit,
+      kind: satellite.preview,
       radius: satellite.orbitRadius,
       tilt: satellite.tilt,
       speed: orbitSpeed(satellite.orbitRadius),
@@ -550,7 +607,10 @@ function createConstellation(
 
     // The nucleus brightens and swells a little under the pointer.
     labHover += ((target?.kind === "lab" ? 1 : 0) - labHover) * step;
-    shellMaterial.opacity = SHELL_OPACITY + 0.35 * labHover;
+    shellMaterial.opacity = Math.min(
+      1,
+      palette.shellOpacity + 0.35 * labHover,
+    );
     shell.scale.setScalar(1 + 0.06 * labHover);
 
     for (const body of bodies) {
@@ -568,8 +628,10 @@ function createConstellation(
       const front = body.hover > 0.5;
       body.badge.material.depthTest = !front;
       body.badge.renderOrder = front ? 10 : 0;
-      (body.orbit.material as LineBasicMaterial).opacity =
-        ORBIT_OPACITY + 0.45 * body.hover;
+      (body.orbit.material as LineBasicMaterial).opacity = Math.min(
+        1,
+        palette.orbitOpacity + 0.45 * body.hover,
+      );
     }
   }
 
@@ -579,6 +641,47 @@ function createConstellation(
     update(0, 0);
     draw();
   };
+
+  function setTheme(next: Theme) {
+    if (next === theme) return;
+    theme = next;
+    palette = SCENE_PALETTES[theme];
+
+    // Materials that only change colour. The per-frame opacities (orbits,
+    // shell) read `palette` in update(), so they follow on their own.
+    shellMaterial.color.set(palette.shell);
+    crystalMaterial.color.set(palette.crystal);
+    crystalMaterial.emissive.set(palette.crystalEmissive);
+    crystalMaterial.emissiveIntensity = palette.crystalEmissiveIntensity;
+
+    // The star field bakes its colours into a buffer, so it is rebuilt (it is
+    // seeded, so the stars stay where they were).
+    system.remove(stars);
+    disposeTree(stars);
+    stars = createStars(palette);
+    system.add(stars);
+
+    for (const body of bodies) {
+      (body.orbit.material as LineBasicMaterial).color.set(
+        craftColor(body.kind, theme),
+      );
+      body.beacon.material.color.set(palette.beacon);
+      body.badge.material.opacity = palette.badgeOpacity;
+
+      // A craft's colours are spread over several materials, so swap the model
+      // and carry over its spin.
+      const next = makeCraft(body.kind);
+      next.rotation.copy(body.craft.rotation);
+      body.group.remove(body.craft);
+      disposeTree(body.craft);
+      body.group.add(next);
+      body.craft = next;
+    }
+
+    // Reduced motion has no render loop to show the change, or to apply the
+    // opacities update() sets, so do both.
+    if (!animated) redraw();
+  }
 
   function resize() {
     const { clientWidth: width, clientHeight: height } = mount;
@@ -664,10 +767,13 @@ function createConstellation(
 
   if (!animated) {
     redraw();
-    return () => {
-      removePointerListeners();
-      resizeObserver.disconnect();
-      dispose();
+    return {
+      setTheme,
+      dispose: () => {
+        removePointerListeners();
+        resizeObserver.disconnect();
+        dispose();
+      },
     };
   }
 
@@ -701,13 +807,16 @@ function createConstellation(
   });
   visibility.observe(mount);
 
-  return () => {
-    renderer.setAnimationLoop(null);
-    visibility.disconnect();
-    removePointerListeners();
-    resizeObserver.disconnect();
-    timer.dispose();
-    dispose();
+  return {
+    setTheme,
+    dispose: () => {
+      renderer.setAnimationLoop(null);
+      visibility.disconnect();
+      removePointerListeners();
+      resizeObserver.disconnect();
+      timer.dispose();
+      dispose();
+    },
   };
 }
 
@@ -728,26 +837,42 @@ export default function ConstellationScene({
     () => true,
   );
   const reducedMotion = useMediaQuery(REDUCED_MOTION);
+  const theme = useTheme();
   const [fps, setFps] = useState<number | null>(null);
   /** What the pointer is over, which decides what the hover card says. */
   const [hover, setHover] = useState<HoverTarget | null>(null);
 
+  const sceneRef = useRef<SceneHandle | null>(null);
+  /** The theme now, for the effect below to read without re-running on it. */
+  const currentTheme = useEffectEvent(() => theme);
+
+  // The scene is built once, not per theme: a rebuild would throw away the
+  // angle you dragged to and where every satellite is on its orbit.
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount || !supported) return;
     try {
-      return createConstellation(
-        mount,
-        satellites,
-        !reducedMotion,
-        setFps,
-        setHover,
-      );
+      const scene = createConstellation(mount, satellites, {
+        animated: !reducedMotion,
+        theme: currentTheme(),
+        onFps: setFps,
+        onHover: setHover,
+      });
+      sceneRef.current = scene;
+      return () => {
+        sceneRef.current = null;
+        scene.dispose();
+      };
     } catch {
       // The context could not be created after all: leave the panel empty
       // rather than take the page down. The products are listed below it.
     }
   }, [satellites, supported, reducedMotion]);
+
+  // A theme change recolours the live scene in place.
+  useEffect(() => {
+    sceneRef.current?.setTheme(theme);
+  }, [theme]);
 
   /** Puts the hover card beside the pointer, inside the window. */
   const placeCard = useCallback(() => {
@@ -803,13 +928,15 @@ export default function ConstellationScene({
         hidden={hover === null}
         className="pointer-events-none absolute left-0 top-0 z-40 w-72 rounded-lg border border-surface-container-highest/70 bg-surface-container-high/95 p-space-sm shadow-panel backdrop-blur"
       >
-        {hoveredSatellite && <SatelliteCard satellite={hoveredSatellite} />}
+        {hoveredSatellite && (
+          <SatelliteCard satellite={hoveredSatellite} theme={theme} />
+        )}
         {hover?.kind === "lab" && <LabCard lab={lab} />}
       </div>
 
       {!supported && (
         <div className="absolute inset-0 grid place-items-center p-space-lg text-center">
-          <div className="pointer-events-auto flex max-w-sm flex-col items-center gap-space-md font-mono text-label-sm text-outline">
+          <div className="pointer-events-auto flex max-w-sm flex-col items-center gap-space-md font-mono text-label-sm text-outline light:text-on-surface-variant">
             <Icon name="deployed_code" className="text-2xl" />
             <p>
               WebGL 2 isn&apos;t available in this browser, so the 3D view
@@ -844,12 +971,15 @@ export default function ConstellationScene({
             <Icon name="timeline" className="text-[12px] text-tertiary" />
             ELLIPTICAL TRAJECTORY: COMPUTED
           </Chip>
-          <Chip className="text-outline">
+          <Chip className="text-outline light:text-on-surface-variant">
             <Icon name="speed" className="text-[12px] text-secondary" />
             <span className="font-medium text-primary">
               {fps === null ? "--" : fps.toFixed(1)} FPS
             </span>
           </Chip>
+          {/* This page has no header, so the theme switch lives here, drawn
+              like the 3D MODE switch below. */}
+          <ThemeSwitchChip />
         </div>
       </div>
 
@@ -863,21 +993,20 @@ export default function ConstellationScene({
                 : "DRAG TO ROTATE • HOVER TO INSPECT"}
             </span>
           </Chip>
-          <Chip className="text-outline">SOLAR NUCLEUS KEPLER-SIM V2.4</Chip>
+          <Chip className="text-outline light:text-on-surface-variant">
+            SOLAR NUCLEUS KEPLER-SIM V2.4
+          </Chip>
         </div>
         <div className="flex items-center gap-2">
-          <Chip className="text-outline">
+          <Chip className="text-outline light:text-on-surface-variant">
             <span className="font-medium text-secondary">WEBGL2</span>
             <span>• THREE.JS R{REVISION}</span>
           </Chip>
-          <ConstellationSwitch
-            on
-            className="pointer-events-auto inline-flex py-1 text-[10px]"
-          />
+          <ConstellationSwitch on variant="hud" />
           <Link
             href="/#products-directory"
             prefetch={false}
-            className="pointer-events-auto inline-flex items-center gap-1 rounded-xs bg-primary px-2.5 py-1 text-[11px] font-medium text-on-primary shadow-chip transition-colors hover:bg-secondary hover:text-surface"
+            className="pointer-events-auto inline-flex items-center gap-1 rounded-xs border border-transparent bg-primary px-2.5 py-1 text-[11px] font-medium text-on-primary shadow-chip transition-colors hover:bg-secondary hover:text-surface"
           >
             Inspect Satellites
             <Icon name="expand_more" className="text-[12px]" />
@@ -889,7 +1018,13 @@ export default function ConstellationScene({
 }
 
 /** The hover card for a satellite: a short summary of the project. */
-function SatelliteCard({ satellite }: { satellite: Satellite }) {
+function SatelliteCard({
+  satellite,
+  theme,
+}: {
+  satellite: Satellite;
+  theme: Theme;
+}) {
   const release = [satellite.version, satellite.status.toUpperCase()]
     .filter(Boolean)
     .join(" · ");
@@ -897,7 +1032,7 @@ function SatelliteCard({ satellite }: { satellite: Satellite }) {
   return (
     <div
       className="border-l-2 pl-space-sm"
-      style={{ borderColor: cssColor(CRAFT_COLORS[satellite.preview]) }}
+      style={{ borderColor: cssColor(craftColor(satellite.preview, theme)) }}
     >
       <p className="font-mono text-label-sm text-on-surface-variant">
         {`${satellite.tag} // ${satellite.topic}`}
@@ -906,7 +1041,7 @@ function SatelliteCard({ satellite }: { satellite: Satellite }) {
       <p className="mt-1 text-body-sm text-on-surface-variant">
         {satellite.summary}
       </p>
-      <p className="mt-2 flex items-center justify-between gap-2 font-mono text-label-sm text-outline">
+      <p className="mt-2 flex items-center justify-between gap-2 font-mono text-label-sm text-outline light:text-on-surface-variant">
         <span>{release}</span>
         <span>{satellite.metric}</span>
       </p>
@@ -928,7 +1063,7 @@ function LabCard({ lab }: { lab: LabInfo }) {
       </p>
       <p className="mt-1 text-headline-sm text-primary">{lab.name}</p>
       <p className="mt-1 text-body-sm text-on-surface-variant">{lab.summary}</p>
-      <p className="mt-2 font-mono text-label-sm text-outline">
+      <p className="mt-2 font-mono text-label-sm text-outline light:text-on-surface-variant">
         {pad(lab.products)} PRODUCTS · {pad(lab.releases)} RELEASES
       </p>
     </div>
@@ -942,11 +1077,5 @@ function Chip({
   className?: string;
   children: React.ReactNode;
 }) {
-  return (
-    <div
-      className={`inline-flex items-center gap-1.5 rounded-xs border border-surface-container-highest/60 bg-surface-container-high/90 px-2.5 py-1 backdrop-blur ${className}`}
-    >
-      {children}
-    </div>
-  );
+  return <div className={`${HUD_CHIP} ${className}`}>{children}</div>;
 }

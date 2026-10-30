@@ -1,48 +1,11 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { setTheme, useTheme } from "@/lib/use-theme";
 import { Icon } from "./icon";
 
-type Theme = "dark" | "light";
-
-/** The theme lives on <html> (set before paint by the script in layout). */
-function subscribe(onChange: () => void) {
-  const observer = new MutationObserver(onChange);
-  observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["class"],
-  });
-  return () => observer.disconnect();
-}
-
-function getTheme(): Theme {
-  return document.documentElement.classList.contains("light")
-    ? "light"
-    : "dark";
-}
-
 export function ThemeToggle() {
-  const theme = useSyncExternalStore<Theme>(subscribe, getTheme, () => "dark");
+  const theme = useTheme();
   const isDark = theme === "dark";
-
-  function toggle() {
-    const next: Theme = isDark ? "light" : "dark";
-    const apply = () =>
-      document.documentElement.classList.toggle("light", next === "light");
-
-    // Cross-fade where supported; otherwise (or with reduced motion) just switch.
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!reduce && "startViewTransition" in document) {
-      document.startViewTransition(apply);
-    } else {
-      apply();
-    }
-    try {
-      localStorage.setItem("mitaito_theme", next);
-    } catch {
-      // Storage can be blocked; the toggle still works for this visit.
-    }
-  }
 
   return (
     <button
@@ -50,7 +13,7 @@ export function ThemeToggle() {
       role="switch"
       aria-checked={isDark}
       aria-label="Dark mode"
-      onClick={toggle}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
       className="group relative flex h-8 w-16 items-center justify-between rounded-full border border-surface-container-highest/60 bg-surface-container-low p-1 shadow-chip transition-colors hover:bg-surface-container-high"
     >
       <Icon

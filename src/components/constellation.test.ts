@@ -91,6 +91,32 @@ describe("3D mode: the /3d page", () => {
     expect(screen).toMatch(/style\.overflow\s*=\s*previous/);
   });
 
+  it("has its own theme switch, in the HUD's style, since it has no header", () => {
+    expect(read("components/constellation-scene.tsx")).toContain("<ThemeSwitchChip");
+  });
+
+  it("draws every HUD control from one chip box, so the switches match the text chips", () => {
+    const scene = read("components/constellation-scene.tsx");
+    const chips = read("components/switch-chip.tsx");
+
+    // The text chips and both switches share HUD_CHIP (same height and weight)...
+    expect(scene).toMatch(/className=\{`\$\{HUD_CHIP\} \$\{className\}`\}/);
+    expect(chips).toMatch(/HUD_SWITCH_CHIP = `\$\{HUD_CHIP\} /);
+    expect(read("components/theme-switch-chip.tsx")).toContain("HUD_SWITCH_CHIP");
+    expect(scene).toContain('<ConstellationSwitch on variant="hud" />');
+    // ...and the CTA is given the chips' 1px border so its height lines up.
+    expect(scene).toMatch(/border border-transparent bg-primary px-2\.5 py-1/);
+  });
+
+  it("recolours in place on a theme change instead of rebuilding the scene", () => {
+    const scene = read("components/constellation-scene.tsx");
+
+    // The effect that builds the scene must not re-run when the theme changes,
+    // or the dragged view and every satellite's orbit position would reset.
+    expect(scene).toMatch(/\}, \[satellites, supported, reducedMotion\]\);/);
+    expect(scene).toMatch(/sceneRef\.current\?\.setTheme\(theme\)/);
+  });
+
   it("is served at /3d and still lists the products as text", () => {
     const page = read("app/(immersive)/3d/page.tsx");
 

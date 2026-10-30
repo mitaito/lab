@@ -1,4 +1,5 @@
 import type { Product, ProductPreview, ProductStatus } from "@/lib/content";
+import type { Theme } from "./use-theme";
 
 /** The full-window 3D view. Turning on 3D mode navigates here. */
 export const CONSTELLATION_PATH = "/3d";
@@ -124,6 +125,91 @@ export function placeTooltip(
   if (y + card.height > bounds.height) y = pointer.y - gap - card.height;
   return { x: Math.max(0, x), y: Math.max(0, y) };
 }
+
+/**
+ * The same accents for a light page. The dark-theme ones are pale and glow on
+ * a dark ground but all but vanish on a light one, so these are the deeper
+ * (Tailwind 600-ish) shades. Also a `Record` over every preview kind.
+ */
+export const CRAFT_COLORS_LIGHT: Record<ProductPreview, number> = {
+  gomoku: 0x059669,
+  waveform: 0x0d9488,
+  agents: 0x4f46e5,
+  force: 0x2563eb,
+  lenia: 0x7c3aed,
+  crdt: 0x0284c7,
+};
+
+/** The accent of a craft kind for the given theme. */
+export function craftColor(preview: ProductPreview, theme: Theme): number {
+  return (theme === "light" ? CRAFT_COLORS_LIGHT : CRAFT_COLORS)[preview];
+}
+
+/**
+ * Everything in the scene that is not a craft accent, per theme. The scene is
+ * drawn on a transparent canvas over the page, so what reads well on the dark
+ * page (pale, thin, translucent) nearly disappears on the light one; the light
+ * set is deeper and more opaque. src/lib/constellation.test.ts checks both
+ * against the real page background.
+ */
+export interface ScenePalette {
+  /** Orbit lines are drawn at this opacity in their craft's accent. */
+  orbitOpacity: number;
+  /** The nucleus's wireframe shell and the crystal inside it. */
+  shell: number;
+  shellOpacity: number;
+  crystal: number;
+  crystalEmissive: number;
+  crystalEmissiveIntensity: number;
+  /** The background star field: two colours, drawn at one opacity and size. */
+  starGreen: number;
+  starIndigo: number;
+  starOpacity: number;
+  starSize: number;
+  /** The marker above each satellite. */
+  beacon: number;
+  /** How opaque the dark name plate above each satellite is drawn. */
+  badgeOpacity: number;
+  /** Secondary parts of a craft mix their accent toward this colour. */
+  toneTarget: number;
+  toneAmount: number;
+}
+
+export const SCENE_PALETTES: Record<Theme, ScenePalette> = {
+  dark: {
+    orbitOpacity: 0.25,
+    shell: 0x059669,
+    shellOpacity: 0.6,
+    crystal: 0x10b981,
+    crystalEmissive: 0x065f46,
+    crystalEmissiveIntensity: 0.8,
+    starGreen: 0x10b981,
+    starIndigo: 0x818cf8,
+    starOpacity: 0.75,
+    starSize: 0.09,
+    beacon: 0xffffff,
+    badgeOpacity: 0.92,
+    toneTarget: 0xffffff,
+    toneAmount: 0.5,
+  },
+  light: {
+    orbitOpacity: 0.55,
+    shell: 0x047857,
+    shellOpacity: 0.85,
+    crystal: 0x059669,
+    crystalEmissive: 0x064e3b,
+    crystalEmissiveIntensity: 0.5,
+    starGreen: 0x047857,
+    starIndigo: 0x4f46e5,
+    starOpacity: 0.8,
+    starSize: 0.12,
+    beacon: 0x0f172a,
+    // Fully opaque: a translucent dark plate over a light page turns grey.
+    badgeOpacity: 1,
+    toneTarget: 0x0f172a,
+    toneAmount: 0.4,
+  },
+};
 
 /** Products in directory order, each on its own orbit around the nucleus. */
 export function toSatellites(products: readonly Product[]): Satellite[] {

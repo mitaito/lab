@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* `light:` applies a utility in the light theme only (the `.light` class on <html>). */
+@custom-variant light (&:where(.light, .light *));
+
 /*
  * Theme tokens (the "Obsidian Kinetic" system). Dark is the default; adding
  * `.light` to <html> swaps every token, so components never branch on theme.

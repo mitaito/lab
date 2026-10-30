@@ -1,9 +1,12 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Product } from "@/lib/content";
 import { PRODUCT_PREVIEWS } from "./content/schema";
 import {
   BASE_PITCH,
   cameraDistance,
+  craftColor,
   CRAFT_COLORS,
   DRAG_SPEED,
   dragView,
@@ -14,6 +17,7 @@ import {
   pickTarget,
   placeTooltip,
   sameTarget,
+  SCENE_PALETTES,
   toSatellites,
 } from "./constellation";
 
@@ -303,6 +307,110 @@ describe("cameraDistance", () => {
     expect(cameraDistance(1.6, MAX_PITCH, 25)).toBeGreaterThan(
       cameraDistance(1.6, MAX_PITCH, outer),
     );
+  });
+});
+
+/**
+ * The scene is drawn over the page, so how well it reads is a property of its
+ * colours against the page's. The backgrounds are read from globals.css, so
+ * they cannot drift from what the page really uses.
+ */
+describe("scene colours against the page", () => {
+  const css = fs.readFileSync(path.join(__dirname, "../app/globals.css"), "utf8");
+
+  /** `--surface-container-lowest`, which the /3d screen is painted with. */
+  function pageBackground(block: ":root" | ".light"): number {
+    const start = css.indexOf(`${block} {`);
+    const body = css.slice(start, css.indexOf("}", start));
+    const match = body.match(/--surface-container-lowest:\s*#([0-9a-f]{6})/i);
+    expect(match, `no --surface-container-lowest in ${block}`).not.toBeNull();
+    return parseInt(match![1]!, 16);
+  }
+
+  const channels = (hex: number) => [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255];
+  const luminance = (rgb: number[]) => {
+    const [r, g, b] = rgb.map((c) => {
+      const s = c / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+  };
+  /** WCAG contrast ratio between two colours. */
+  const contrast = (a: number[], b: number[]) => {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+    return (hi! + 0.05) / (lo! + 0.05);
+  };
+  /** `fg` drawn at `alpha` over `bg`, as the canvas composites it. */
+  const over = (fg: number, alpha: number, bg: number) =>
+    channels(fg).map((c, i) => c * alpha + channels(bg)[i]! * (1 - alpha));
+  const mix = (from: number, to: number, amount: number) =>
+    channels(from).map((c, i) => c + (channels(to)[i]! - c) * amount);
+
+  const themes = [
+    { theme: "dark", background: pageBackground(":root") },
+    { theme: "light", background: pageBackground(".light") },
+  ] as const;
+
+  const pageBackgrounds = { dark: themes[0].background, light: themes[1].background };
+  /** How well an orbit line (translucent, in its craft's accent) reads on the page. */
+  const lineContrast = (theme: "dark" | "light", kind: (typeof PRODUCT_PREVIEWS)[number]) =>
+    contrast(
+      over(craftColor(kind, theme), SCENE_PALETTES[theme].orbitOpacity, pageBackgrounds[theme]),
+      channels(pageBackgrounds[theme]),
+    );
+  /** How well the nucleus's wireframe shell reads on the page. */
+  const shellContrast = (theme: "dark" | "light") =>
+    contrast(
+      over(SCENE_PALETTES[theme].shell, SCENE_PALETTES[theme].shellOpacity, pageBackgrounds[theme]),
+      channels(pageBackgrounds[theme]),
+    );
+
+  for (const { theme, background } of themes) {
+    const bg = channels(background);
+    const palette = SCENE_PALETTES[theme];
+    const kinds = PRODUCT_PREVIEWS;
+
+    describe(`${theme} theme`, () => {
+      it("draws every craft in an accent that stands out from the page (3:1)", () => {
+        for (const kind of kinds) {
+          expect(contrast(channels(craftColor(kind, theme)), bg), kind).toBeGreaterThanOrEqual(3);
+        }
+      });
+
+      // The dark palette is the accepted look; light must be no harder to see.
+      it("keeps orbit lines at least as visible as in the dark theme", () => {
+        for (const kind of kinds) {
+          expect(lineContrast(theme, kind), kind).toBeGreaterThanOrEqual(lineContrast("dark", kind));
+        }
+      });
+
+      it("keeps the nucleus shell at least as visible as in the dark theme", () => {
+        expect(shellContrast(theme)).toBeGreaterThanOrEqual(shellContrast("dark"));
+      });
+
+      it("draws the markers and stars so they can be seen", () => {
+        expect(contrast(channels(palette.beacon), bg)).toBeGreaterThanOrEqual(7);
+        for (const star of [palette.starGreen, palette.starIndigo]) {
+          expect(contrast(over(star, palette.starOpacity, background), bg)).toBeGreaterThanOrEqual(3);
+        }
+      });
+
+      it("keeps the secondary parts of a craft visible too (3:1)", () => {
+        for (const kind of kinds) {
+          const tone = mix(craftColor(kind, theme), palette.toneTarget, palette.toneAmount);
+          expect(contrast(tone, bg), kind).toBeGreaterThanOrEqual(3);
+        }
+      });
+    });
+  }
+
+  it("needs its own light accents: the dark ones fade into the light page", () => {
+    const light = channels(pageBackground(".light"));
+    const faded = PRODUCT_PREVIEWS.filter(
+      (kind) => contrast(channels(CRAFT_COLORS[kind]), light) < 3,
+    );
+
+    expect(faded.length).toBeGreaterThan(0);
   });
 });
 

@@ -221,7 +221,17 @@ product's summary, version, status and metric; hovering the central nucleus
 shows a card about the lab (`LAB_SUMMARY` in `src/lib/site.ts`, plus the product
 and release counts). The cards are drawn in HTML, not on the canvas, and are
 hidden from assistive technology because the same text is on the page. Esc, or
-the switch there, returns home. Satellites are built from `content/products` (the `preview` kind
+the switch there, returns home.
+
+The page has no header, so it has its own theme switch in the HUD, drawn like
+the 3D MODE switch (`theme-switch-chip.tsx`, sharing `switch-chip.tsx`). A theme
+change recolours the live scene in place (`setTheme` in `constellation-scene.tsx`),
+so the angle you dragged to and each satellite's place on its orbit are kept. The
+canvas is transparent over the page, so the scene has a palette per theme
+(`SCENE_PALETTES` and `CRAFT_COLORS_LIGHT` in `src/lib/constellation.ts`): the
+dark one is pale and glows, which would all but vanish on a light page. A test
+checks both against the page background read from `globals.css`, so a new colour
+that cannot be seen fails the build. Satellites are built from `content/products` (the `preview` kind
 picks the model, the product order picks the orbit), so a new product shows up
 without touching the scene.
 
