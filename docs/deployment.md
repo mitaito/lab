@@ -71,7 +71,7 @@ Still on you: a **DNS record** for `mitaito.com` that reaches the cluster
 (it resolves through Cloudflare today, like `caro.mitaito.com`). The
 `mi-lab` namespace and the `deployer` ServiceAccount that CI uses come from the
 [devops repository](https://github.com/mitaito/devops/blob/main/k8s/README.md)
-(`k8s/service-account/mi-lab`), not from this one. Apply that first.
+(`k8s/service-accounts/mi-lab`), not from this one. Apply that first.
 
 ### 2. The deploy token
 
@@ -96,7 +96,7 @@ Things to know about this credential:
   and read its pods, events and certificate. It cannot read Secrets, delete
   anything or touch another namespace, so a leaked token does limited damage.
 - The token does not expire. To rotate it, delete the `deployer-token` Secret in
-  the `mi-lab` namespace, apply `k8s/service-account/mi-lab` from the devops
+  the `mi-lab` namespace, apply `k8s/service-accounts/mi-lab` from the devops
   repository again, and rerun the three commands.
 - GitHub-hosted runners can reach the API server at the address in `K8S_SERVER`,
   and its certificate includes that address, so TLS verifies.
