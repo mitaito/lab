@@ -1,0 +1,43 @@
+name: Partner with us
+description: Research, integration, co-development or early access.
+title: "[Partnership] "
+labels: ["partnership"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We welcome partners. Some of our tools are open and some stay private while they mature, so tell us what you have in mind and we will work out how to collaborate.
+
+        Issues here are **public**. Please do not post private email addresses, phone numbers or confidential details; we will reply here to agree a private way to continue.
+  - type: input
+    id: organisation
+    attributes:
+      label: Organisation or project
+      placeholder: Acme Research Lab
+    validations:
+      required: true
+  - type: dropdown
+    id: interest
+    attributes:
+      label: What are you interested in?
+      options:
+        - Research collaboration
+        - Integrating with our tools
+        - Early access to a private tool
+        - Co-development
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Tell us more
+      description: What would you like to do, and with which products?
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link
+      description: A website or public profile, if you have one.
+      placeholder: https://

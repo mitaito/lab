@@ -1,0 +1,12 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        # Set SITE_URL to the public origin when you deploy, e.g.
+        # SITE_URL=https://lab.example.com docker compose up -d --build
+        SITE_URL: ${SITE_URL:-http://localhost:3000}
+    image: mitaito-lab
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
