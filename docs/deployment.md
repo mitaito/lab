@@ -17,8 +17,7 @@ Every push to `main` runs three jobs:
 
 1. **Verify**: ESLint, type-check and unit tests.
 2. **Build and push image**: builds the Docker image with `SITE_URL` baked in and
-   pushes it to `ghcr.io/mitaito/milab` as `latest`, plus `sha-<commit>` so every
-   build stays traceable.
+   pushes it to `ghcr.io/mitaito/milab` with the single tag `latest`.
 3. **Deploy to Kubernetes**: applies `k8s/`, restarts the Deployment so every pod
    pulls the new `latest` (`imagePullPolicy: Always`), waits for the rollout,
    then requests the public URL as a smoke test.
@@ -119,10 +118,8 @@ needs read access to the `milab` package.
   other branch only Verify runs.
 - **Roll back:** revert the commit on `main` and let the pipeline redeploy.
   `kubectl rollout undo` does **not** help here: every revision says `:latest`, so
-  an older revision would pull the newest image again. For a quick manual step
-  back, run an older build by its tag:
-  `kubectl -n mitaito-lab set image deployment/lab web=ghcr.io/mitaito/milab:sha-<commit>`.
-  The next deploy returns to `latest`.
+  an older revision would pull the newest image again. There is no per-commit
+  tag to step back to, because `latest` is the only tag.
 - **Look around:**
   `kubectl -n mitaito-lab get pods,ingress,certificate`.
 
