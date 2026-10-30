@@ -17,7 +17,7 @@ Every push to `main` runs three jobs:
 
 1. **Verify**: ESLint, type-check and unit tests.
 2. **Build and push image**: builds the Docker image with `SITE_URL` baked in and
-   pushes it to `ghcr.io/mitaito/lab` as `latest`, plus `sha-<commit>` so every
+   pushes it to `ghcr.io/mitaito/milab` as `latest`, plus `sha-<commit>` so every
    build stays traceable.
 3. **Deploy to Kubernetes**: applies `k8s/`, restarts the Deployment so every pod
    pulls the new `latest` (`imagePullPolicy: Always`), waits for the rollout,
@@ -96,7 +96,7 @@ Nothing else needs configuring.
 
 ### 3. The image pull secret
 
-The `lab` package on GHCR is private like your other images, and Secrets are
+The `milab` package on GHCR is private like your other images, and Secrets are
 per-namespace, so copy `ghcr-creds` from `mi-caro` into the new namespace once:
 
 ```bash
@@ -108,7 +108,7 @@ kubectl -n mi-caro get secret ghcr-creds -o jsonpath='{.data.\.dockerconfigjson}
 ```
 
 Until it exists the first rollout sits in `ImagePullBackOff`. The token behind it
-needs read access to the `lab` package.
+needs read access to the `milab` package.
 
 ## Day to day
 
@@ -121,7 +121,7 @@ needs read access to the `lab` package.
   `kubectl rollout undo` does **not** help here: every revision says `:latest`, so
   an older revision would pull the newest image again. For a quick manual step
   back, run an older build by its tag:
-  `kubectl -n mitaito-lab set image deployment/lab web=ghcr.io/mitaito/lab:sha-<commit>`.
+  `kubectl -n mitaito-lab set image deployment/lab web=ghcr.io/mitaito/milab:sha-<commit>`.
   The next deploy returns to `latest`.
 - **Look around:**
   `kubectl -n mitaito-lab get pods,ingress,certificate`.

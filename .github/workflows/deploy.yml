@@ -57,15 +57,16 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # The Deployment runs :latest. The sha-<commit> tag is kept so any build
-      # can be traced, or run by hand if you need to step back.
+      # can be traced, or run by hand if you need to step back. latest is
+      # listed first so GitHub's package page is titled with it.
       - name: Compute image tags and labels
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/mitaito/milab
           tags: |
-            type=sha
             type=raw,value=latest
+            type=sha
 
       - name: Build and push image
         uses: docker/build-push-action@v7

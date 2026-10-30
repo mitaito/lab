@@ -39,7 +39,7 @@ spec:
         - name: web
           # CI pushes :latest on every deploy, then restarts this Deployment;
           # Always makes each new pod pull it.
-          image: ghcr.io/mitaito/lab:latest
+          image: ghcr.io/mitaito/milab:latest
           imagePullPolicy: Always
           ports:
             - name: http
